@@ -42,13 +42,6 @@
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
-    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
-    <script>
-      // VConsole 默认会挂载到 `window.VConsole` 上
-      var vConsole = new window.VConsole()
-      // 结束调试后，可移除掉
-      vConsole.destroy()
-    </script>
     <!-- 统计勿删 -->
     <script>
       !function (p) { "use strict"; !function (t) { var s = window, e = document, i = p, c = "".concat("https:" === e.location.protocol ? "https://" : "http://", "sdk.51.la/js-sdk-pro.min.js"), n = e.createElement("script"), r = e.getElementsByTagName("script")[0]; n.type = "text/javascript", n.setAttribute("charset", "UTF-8"), n.async = !0, n.src = c, n.id = "LA_COLLECT", i.d = n; var o = function () { s.LA.ids.push(i) }; s.LA ? s.LA.ids && o() : (s.LA = p, s.LA.ids = [], o()), r.parentNode.insertBefore(n, r) }() }({ id: "L5qLQC2HtBt5AGKV", ck: "L5qLQC2HtBt5AGKV", autoTrack: true, hashMode: true });

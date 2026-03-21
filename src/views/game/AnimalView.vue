@@ -19,7 +19,7 @@
             <template v-if="renamingId === 'pet'">
               <input
                 v-model="renameInput"
-                class="bg-bg border border-accent/30 rounded-xs px-1 py-0.5 text-xs text-text w-20 outline-none"
+                class="bg-bg border border-accent/30 rounded-xs px-1 py-0.5 text-xs text-text w-20 focus:border-accent outline-none placeholder:text-muted/40 transition-colors"
                 maxlength="8"
                 @keyup.enter="confirmRename"
                 @keyup.escape="cancelRename"
@@ -128,7 +128,7 @@
                 <template v-if="renamingId === animal.id">
                   <input
                     v-model="renameInput"
-                    class="bg-bg border border-accent/30 rounded-xs px-1 py-0.5 text-xs text-text w-20 outline-none"
+                    class="bg-bg border border-accent/30 rounded-xs px-1 py-0.5 text-xs text-text w-20 focus:border-accent outline-none placeholder:text-muted/40 transition-colors"
                     maxlength="8"
                     @keyup.enter="confirmRename"
                     @keyup.escape="cancelRename"
@@ -217,7 +217,7 @@
               <template v-if="renamingId === animalStore.getHorse.id">
                 <input
                   v-model="renameInput"
-                  class="bg-bg border border-accent/30 rounded-xs px-1 py-0.5 text-xs text-text w-20 outline-none"
+                  class="bg-bg border border-accent/30 rounded-xs px-1 py-0.5 text-xs text-text w-20 focus:border-accent outline-none placeholder:text-muted/40 transition-colors"
                   maxlength="8"
                   @keyup.enter="confirmRename"
                   @keyup.escape="cancelRename"

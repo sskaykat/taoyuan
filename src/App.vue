@@ -32,9 +32,9 @@
   }
 
   onMounted(() => {
-    // if (!import.meta.env.DEV) {
-    //   document.body.classList.add('no-select')
-    // }
+    if (!import.meta.env.DEV) {
+      document.body.classList.add('select-none')
+    }
 
     // Capacitor Android 返回键拦截
     if (Capacitor.isNativePlatform()) {

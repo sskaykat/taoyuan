@@ -146,6 +146,7 @@
                           {{ line }}
                         </p>
                       </div>
+                      <button class="webdav-log-copy text-[10px] text-muted hover:text-text">复制日志</button>
                     </div>
                   </div>
                 </template>
@@ -356,7 +357,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, type Component } from 'vue'
+  import { ref, onMounted, onBeforeUnmount, type Component } from 'vue'
   import {
     X,
     Pause,
@@ -385,11 +386,13 @@
   import Divider from '@/components/game/Divider.vue'
   import { useAudio } from '@/composables/useAudio'
   import { useGameClock } from '@/composables/useGameClock'
+  import { useGameLog } from '@/composables/useGameLog'
   import { useSettingsStore, type QmsgPosition, type QmsgLimitWidthWrap } from '@/stores/useSettingsStore'
   import { useTutorialStore } from '@/stores/useTutorialStore'
   import { useWebdav } from '@/composables/useWebdav'
   import { THEMES } from '@/data/themes'
   import SaveManager from '@/components/game/SaveManager.vue'
+  import ClipboardJS from 'clipboard'
 
   type SettingsTab = 'general' | 'display' | 'notification'
 
@@ -433,6 +436,7 @@
   const activeTab = ref<SettingsTab>('general')
   const { sfxEnabled, bgmEnabled, toggleSfx, toggleBgm } = useAudio()
   const { isPaused, gameSpeed, togglePause, cycleSpeed } = useGameClock()
+  const { showFloat } = useGameLog()
   const settingsStore = useSettingsStore()
   const tutorialStore = useTutorialStore()
   const {
@@ -446,6 +450,26 @@
   } = useWebdav()
 
   const showSaveManager = ref(false)
+  let clipboard: ClipboardJS | null = null
+
+  onMounted(() => {
+    clipboard = new ClipboardJS('.webdav-log-copy', {
+      text: () => webdavTraceLogs.value.join('\n')
+    })
+    clipboard.on('success', e => {
+      e.clearSelection()
+      showFloat('日志已复制', 'success')
+    })
+    clipboard.on('error', () => {
+      document.body.classList.remove('select-none')
+      showFloat('复制失败，请手动复制', 'danger')
+    })
+  })
+
+  onBeforeUnmount(() => {
+    clipboard?.destroy()
+    clipboard = null
+  })
 
   const handleTestWebdav = async () => {
     await testConnection()
@@ -481,3 +505,11 @@
     settingsStore.syncQmsgConfig()
   }
 </script>
+
+<style scoped>
+  .yes-select {
+    -webkit-user-select: unset;
+    user-select: unset;
+    -webkit-touch-callout: unset;
+  }
+</style>
