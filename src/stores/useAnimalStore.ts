@@ -172,6 +172,17 @@ export const useAnimalStore = defineStore('animal', () => {
     return { fedCount, noFeedCount }
   }
 
+  /** 喂食单只动物 */
+  const feedAnimal = (animalId: string, feedId: string = HAY_ITEM_ID): boolean => {
+    const animal = animals.value.find(a => a.id === animalId)
+    if (!animal || animal.wasFed) return false
+    if (!removeCombinedItem(feedId, 1)) return false
+    animal.wasFed = true
+    animal.fedWith = feedId
+    animal.hunger = 0
+    return true
+  }
+
   /** 标记所有动物为已喂食（不消耗饲料，用于晨间雇工/配偶预喂食） */
   const markAllFed = () => {
     for (const animal of animals.value) {
@@ -718,7 +729,7 @@ export const useAnimalStore = defineStore('animal', () => {
     if (building.level < 2) return { success: false, message: '需要大型畜舍（2级）才能安装。' }
     if (autoPetterBuildings.value.includes(buildingType)) return { success: false, message: '该畜舍已安装自动抚摸机。' }
     autoPetterBuildings.value.push(buildingType)
-    return { success: true, message: `自动抚摸机已安装到${buildingType === 'coop' ? '鸡舍' : '畜棚'}。` }
+    return { success: true, message: `自动抚摸机已安装到${buildingType === 'coop' ? '鸡舍' : '牧场'}。` }
   }
 
   const serialize = () => {
@@ -783,6 +794,7 @@ export const useAnimalStore = defineStore('animal', () => {
     healAnimal,
     healAllSick,
     feedAll,
+    feedAnimal,
     markAllFed,
     petAnimal,
     petAllAnimals,

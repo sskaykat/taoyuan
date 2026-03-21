@@ -16,9 +16,9 @@ export interface SeedGenetics {
   stability: number
   /** 变异率 1-50 → 大幅突变概率 */
   mutationRate: number
-  /** 父本A的ID（可溯源） */
+  /** 亲本A的ID（可溯源） */
   parentA: string | null
-  /** 父本B的ID（可溯源） */
+  /** 亲本B的ID（可溯源） */
   parentB: string | null
   /** 是否为杂交品种 */
   isHybrid: boolean
@@ -35,9 +35,9 @@ export interface BreedingSeed {
 
 /** 育种台槽位 */
 export interface BreedingSlot {
-  /** 父本A */
+  /** 亲本A */
   parentA: SeedGenetics | null
-  /** 父本B */
+  /** 亲本B */
   parentB: SeedGenetics | null
   /** 已加工天数 */
   daysProcessed: number
@@ -55,9 +55,9 @@ export interface HybridDef {
   id: string
   /** 杂交种名称 */
   name: string
-  /** 父本A的cropId */
+  /** 亲本A的cropId */
   parentCropA: string
-  /** 父本B的cropId */
+  /** 亲本B的cropId */
   parentCropB: string
   /** 父母平均甜度要求 */
   minSweetness: number

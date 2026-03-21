@@ -63,7 +63,8 @@
                     () => handleBuyFromTraveler(item.itemId, item.name, item.price),
                     () => item.quantity > 0 && playerStore.money >= discounted(item.price),
                     count => handleBatchBuyFromTraveler(item.itemId, item.name, item.price, count),
-                    () => getMaxBuyable(discounted(item.price), item.quantity)
+                    () => getMaxBuyable(discounted(item.price), item.quantity),
+                    item.itemId
                   )
                 "
               >
@@ -117,7 +118,8 @@
                   () => handleBuySeed(seed.seedId),
                   () => playerStore.money >= discounted(seed.price),
                   count => handleBatchBuySeed(seed.seedId, count),
-                  () => getMaxBuyable(discounted(seed.price))
+                  () => getMaxBuyable(discounted(seed.price)),
+                  seed.seedId
                 )
               "
             >
@@ -224,7 +226,8 @@
                   () => handleBuySapling(tree.saplingId, tree.saplingPrice, tree.name),
                   () => playerStore.money >= discounted(tree.saplingPrice),
                   count => handleBatchBuySapling(tree.saplingId, tree.saplingPrice, tree.name, count),
-                  () => getMaxBuyable(discounted(tree.saplingPrice))
+                  () => getMaxBuyable(discounted(tree.saplingPrice)),
+                  tree.saplingId
                 )
               "
             >
@@ -246,7 +249,8 @@
                   handleBuyHay,
                   () => playerStore.money >= discounted(HAY_PRICE),
                   count => handleBatchBuyItem('hay', HAY_PRICE, '干草', count),
-                  () => getMaxBuyable(discounted(HAY_PRICE))
+                  () => getMaxBuyable(discounted(HAY_PRICE)),
+                  'hay'
                 )
               "
             >
@@ -268,7 +272,8 @@
                   () => handleBuyItem('wood', WOOD_PRICE, '木材'),
                   () => playerStore.money >= discounted(WOOD_PRICE),
                   count => handleBatchBuyItem('wood', WOOD_PRICE, '木材', count),
-                  () => getMaxBuyable(discounted(WOOD_PRICE))
+                  () => getMaxBuyable(discounted(WOOD_PRICE)),
+                  'wood'
                 )
               "
             >
@@ -290,7 +295,8 @@
                   () => handleBuyItem('rain_totem', RAIN_TOTEM_PRICE, '雨图腾'),
                   () => playerStore.money >= discounted(RAIN_TOTEM_PRICE),
                   count => handleBatchBuyItem('rain_totem', RAIN_TOTEM_PRICE, '雨图腾', count),
-                  () => getMaxBuyable(discounted(RAIN_TOTEM_PRICE))
+                  () => getMaxBuyable(discounted(RAIN_TOTEM_PRICE)),
+                  'rain_totem'
                 )
               "
             >
@@ -320,7 +326,8 @@
                   () => handleBuyItem(item.itemId, item.price, item.name),
                   () => playerStore.money >= discounted(item.price),
                   count => handleBatchBuyItem(item.itemId, item.price, item.name, count),
-                  () => getMaxBuyable(discounted(item.price))
+                  () => getMaxBuyable(discounted(item.price)),
+                  item.itemId
                 )
               "
             >
@@ -459,7 +466,8 @@
                   () => handleBuyItem(b.id, b.price, b.name),
                   () => playerStore.money >= discounted(b.price),
                   count => handleBatchBuyItem(b.id, b.price, b.name, count),
-                  () => getMaxBuyable(discounted(b.price))
+                  () => getMaxBuyable(discounted(b.price)),
+                  b.id
                 )
               "
             >
@@ -489,7 +497,8 @@
                   () => handleBuyItem(t.id, t.price, t.name),
                   () => playerStore.money >= discounted(t.price),
                   count => handleBatchBuyItem(t.id, t.price, t.name, count),
-                  () => getMaxBuyable(discounted(t.price))
+                  () => getMaxBuyable(discounted(t.price)),
+                  t.id
                 )
               "
             >
@@ -519,7 +528,8 @@
                   () => handleBuyItem(item.itemId, item.price, item.name),
                   () => playerStore.money >= discounted(item.price),
                   count => handleBatchBuyItem(item.itemId, item.price, item.name, count),
-                  () => getMaxBuyable(discounted(item.price))
+                  () => getMaxBuyable(discounted(item.price)),
+                  item.itemId
                 )
               "
             >
@@ -554,7 +564,8 @@
                   () => handleBuyItem(f.id, f.price, f.name),
                   () => playerStore.money >= discounted(f.price),
                   count => handleBatchBuyItem(f.id, f.price, f.name, count),
-                  () => getMaxBuyable(discounted(f.price))
+                  () => getMaxBuyable(discounted(f.price)),
+                  f.id
                 )
               "
             >
@@ -584,7 +595,8 @@
                   () => handleBuyItem(item.itemId, item.price, item.name),
                   () => playerStore.money >= discounted(item.price),
                   count => handleBatchBuyItem(item.itemId, item.price, item.name, count),
-                  () => getMaxBuyable(discounted(item.price))
+                  () => getMaxBuyable(discounted(item.price)),
+                  item.itemId
                 )
               "
             >
@@ -614,7 +626,8 @@
                   () => handleBuyItem(item.itemId, item.price, item.name),
                   () => playerStore.money >= discounted(item.price),
                   count => handleBatchBuyItem(item.itemId, item.price, item.name, count),
-                  () => getMaxBuyable(discounted(item.price))
+                  () => getMaxBuyable(discounted(item.price)),
+                  item.itemId
                 )
               "
             >
@@ -820,6 +833,10 @@
             <div class="flex items-center justify-between">
               <span class="text-xs text-muted">{{ buyModalData.batchBuy ? '单价' : '价格' }}</span>
               <span class="text-xs text-accent">{{ buyModalData.price }}文</span>
+            </div>
+            <div v-if="buyModalData.itemId" class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">持有</span>
+              <span class="text-xs">{{ inventoryStore.getItemCount(buyModalData.itemId) }}</span>
             </div>
           </div>
 
@@ -1100,6 +1117,7 @@
     canBuy: () => boolean
     extraLines?: string[]
     buttonText?: string
+    itemId?: string
     batchBuy?: {
       onBuy: (count: number) => void
       maxCount: () => number
@@ -1178,9 +1196,10 @@
     onBuy: () => void,
     canBuy: () => boolean,
     extraLines?: string[],
-    buttonText?: string
+    buttonText?: string,
+    itemId?: string
   ) => {
-    shopModal.value = { type: 'buy', name, description, price, onBuy, canBuy, extraLines, buttonText }
+    shopModal.value = { type: 'buy', name, description, price, onBuy, canBuy, extraLines, buttonText, itemId }
   }
 
   const openBatchBuyModal = (
@@ -1190,7 +1209,8 @@
     onBuySingle: () => void,
     canBuy: () => boolean,
     batchOnBuy: (count: number) => void,
-    batchMaxCount: () => number
+    batchMaxCount: () => number,
+    itemId?: string
   ) => {
     buyQuantity.value = 1
     shopModal.value = {
@@ -1200,7 +1220,8 @@
       price: unitPrice,
       onBuy: onBuySingle,
       canBuy,
-      batchBuy: { onBuy: batchOnBuy, maxCount: batchMaxCount }
+      batchBuy: { onBuy: batchOnBuy, maxCount: batchMaxCount },
+      itemId
     }
   }
 

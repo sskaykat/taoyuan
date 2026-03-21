@@ -144,13 +144,14 @@ export const useNpcStore = defineStore('npc', () => {
   }
 
   /** 每日雇工结算（useEndDay调用） */
-  const processDailyHelpers = (taskFilter?: FarmHelperTask[]): { messages: string[]; dismissedNpcs: string[] } => {
+  const processDailyHelpers = (taskFilter?: FarmHelperTask[]): { messages: string[]; dismissedNpcs: string[]; allFed: boolean } => {
     const playerStore = usePlayerStore()
     const farmStore = useFarmStore()
     const animalStore = useAnimalStore()
     const inventoryStore = useInventoryStore()
     const messages: string[] = []
     const dismissed: string[] = []
+    let allFed = false
 
     for (const helper of [...hiredHelpers.value]) {
       // 按任务类型过滤
@@ -191,12 +192,15 @@ export const useNpcStore = defineStore('npc', () => {
           const result = animalStore.feedAll()
           const fishPondStore = useFishPondStore()
           const fedFish = fishPondStore.pond.built && !fishPondStore.pond.fedToday ? fishPondStore.feedFish() : false
+          allFed = result.noFeedCount === 0 && result.fedCount > 0
           if (result.fedCount > 0 && fedFish) {
             messages.push(`${name}帮你喂了${result.fedCount}只牲畜和鱼塘的鱼。(-${helper.dailyWage}文)`)
           } else if (result.fedCount > 0) {
             messages.push(`${name}帮你喂了${result.fedCount}只牲畜。(-${helper.dailyWage}文)`)
           } else if (fedFish) {
             messages.push(`${name}帮你喂了鱼塘的鱼。(-${helper.dailyWage}文)`)
+          } else if (result.noFeedCount > 0) {
+            messages.push(`${name}发现草料不足，${result.noFeedCount}只牲畜未能喂食。(-${helper.dailyWage}文)`)
           } else {
             messages.push(`${name}今天没什么需要喂的。(-${helper.dailyWage}文)`)
           }
@@ -235,7 +239,7 @@ export const useNpcStore = defineStore('npc', () => {
         }
       }
     }
-    return { messages, dismissedNpcs: dismissed }
+    return { messages, dismissedNpcs: dismissed, allFed }
   }
 
   /** 子女名字池（按性别） */

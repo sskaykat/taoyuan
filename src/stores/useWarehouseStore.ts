@@ -6,7 +6,7 @@ import { useInventoryStore } from './useInventoryStore'
 
 const INITIAL_MAX_CHESTS = 3
 const MAX_CHESTS_CAP = 10
-const MAX_STACK = 99
+const MAX_STACK = 999
 const UNLOCK_COST = 50000
 
 export const useWarehouseStore = defineStore('warehouse', () => {

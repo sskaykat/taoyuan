@@ -24,7 +24,7 @@ import { useAchievementStore } from './useAchievementStore'
 
 const INITIAL_CAPACITY = 24
 const MAX_CAPACITY = 60
-const MAX_STACK = 99
+const MAX_STACK = 999
 const TEMP_CAPACITY = 10
 
 export const useInventoryStore = defineStore('inventory', () => {

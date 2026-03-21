@@ -303,12 +303,23 @@
                 <Divider label="种植" />
                 <button
                   v-for="seed in plantableSeeds"
-                  :key="seed.cropId"
+                  :key="seed.cropId + ':' + seed.quality"
                   class="btn text-xs justify-between mr-1 shrink-0"
-                  @click="doPlant(seed.cropId)"
+                  @click="doPlant(seed.cropId, seed.quality)"
                 >
                   <span :class="seed.colorClass">
                     {{ seed.name }}
+                    <span
+                      v-if="seed.quality !== 'normal'"
+                      :class="{
+                        'text-quality-fine': seed.quality === 'fine',
+                        'text-quality-excellent': seed.quality === 'excellent',
+                        'text-quality-supreme': seed.quality === 'supreme'
+                      }"
+                      class="ml-0.5"
+                    >
+                      [{{ QUALITY_NAMES[seed.quality] }}]
+                    </span>
                     <span v-if="seed.regrowth" class="text-success ml-1">[多茬]</span>
                   </span>
                   <span class="text-muted">×{{ seed.count }}</span>
@@ -1319,18 +1330,37 @@
     })).filter(f => f.count > 0)
   })
 
+  const QUALITY_ORDER: Quality[] = ['normal', 'fine', 'excellent', 'supreme']
+
   const plantableSeeds = computed(() => {
-    return getCropsBySeason(gameStore.season)
-      .filter(crop => inventoryStore.hasItem(crop.seedId))
-      .map(crop => ({
-        cropId: crop.id,
-        seedId: crop.seedId,
-        name: crop.name,
-        count: inventoryStore.getItemCount(crop.seedId),
-        colorClass: cropValueColor(crop.sellPrice),
-        regrowth: crop.regrowth ?? false,
-        regrowthDays: crop.regrowthDays
-      }))
+    const result: {
+      cropId: string
+      seedId: string
+      name: string
+      quality: Quality
+      count: number
+      colorClass: string
+      regrowth: boolean
+      regrowthDays?: number
+    }[] = []
+    for (const crop of getCropsBySeason(gameStore.season)) {
+      for (const q of QUALITY_ORDER) {
+        const count = inventoryStore.getItemCount(crop.seedId, q)
+        if (count > 0) {
+          result.push({
+            cropId: crop.id,
+            seedId: crop.seedId,
+            name: crop.name,
+            quality: q,
+            count,
+            colorClass: cropValueColor(crop.sellPrice),
+            regrowth: crop.regrowth ?? false,
+            regrowthDays: crop.regrowthDays
+          })
+        }
+      }
+    }
+    return result
   })
 
   /** 当季可种的育种种子 */
@@ -1582,9 +1612,9 @@
     activePlotId.value = null
   }
 
-  const doPlant = (cropId: string) => {
+  const doPlant = (cropId: string, quality?: Quality) => {
     if (activePlotId.value === null) return
-    selectedSeed.value = cropId
+    selectedSeed.value = { cropId, quality }
     handlePlotClick(activePlotId.value)
     selectedSeed.value = null
     activePlotId.value = null

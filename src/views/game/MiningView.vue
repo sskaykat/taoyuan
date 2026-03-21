@@ -19,7 +19,8 @@
         <span v-if="miningStore.skullCavernBestFloor > 0" class="text-xs text-muted">最深 第{{ miningStore.skullCavernBestFloor }}层</span>
         <span v-else class="text-xs text-muted/40">未探索</span>
       </div>
-      <p class="text-xs text-muted">无限层 · 无安全点 · 铱矿来源 · 怪物随深度增强</p>
+      <p class="text-xs text-muted">无限层 · 每10层安全点 · 铱矿来源 · 怪物随深度增强</p>
+      <p v-if="miningStore.skullSafePointFloor > 0" class="text-xs text-muted mt-0.5">安全点：第{{ miningStore.skullSafePointFloor }}层</p>
     </div>
 
     <!-- 装备与状态 -->
@@ -185,16 +186,28 @@
           </div>
 
           <!-- 骷髅矿穴 -->
-          <div
-            v-if="miningStore.isSkullCavernUnlocked()"
-            class="flex items-center justify-between border border-danger/30 rounded-xs px-3 py-1.5 cursor-pointer hover:bg-danger/5"
-            @click="handleEnterSkullCavern"
-          >
-            <span class="text-xs text-danger">
-              <Skull :size="12" class="inline" />
-              进入骷髅矿穴
-            </span>
-            <span class="text-xs text-muted">无限层</span>
+          <div v-if="miningStore.isSkullCavernUnlocked()">
+            <div
+              class="flex items-center justify-between border border-danger/30 rounded-xs px-3 py-1.5 cursor-pointer hover:bg-danger/5"
+              @click="handleEnterSkullCavern(undefined)"
+            >
+              <span class="text-xs text-danger">
+                <Skull :size="12" class="inline" />
+                进入骷髅矿穴
+              </span>
+              <span class="text-xs text-muted">第{{ miningStore.skullSafePointFloor + 1 }}层</span>
+            </div>
+            <!-- 骷髅矿穴安全点楼层 -->
+            <div v-if="skullElevatorFloors.length > 0" class="flex flex-wrap space-x-1 mt-1.5">
+              <Button
+                v-for="sp in skullElevatorFloors"
+                :key="sp"
+                class="py-0.5 px-0 min-w-9 justify-center !border-danger/30 !text-danger"
+                @click="handleEnterSkullCavern(sp)"
+              >
+                {{ sp + 1 }}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -548,7 +561,7 @@
       >
         <div class="game-panel max-w-xs w-full">
           <p class="text-sm text-accent mb-2">确认离开</p>
-          <p class="text-xs text-muted mb-3">确定要离开{{ miningStore.isInSkullCavern ? '骷髅矿穴' : '矿洞' }}吗？当前进度不会保留。</p>
+          <p class="text-xs text-muted mb-3">确定要离开{{ miningStore.isInSkullCavern ? '骷髅矿穴' : '矿洞' }}吗？{{ leaveHint }}</p>
           <div class="flex space-x-1.5">
             <Button class="flex-1 justify-center" @click="showLeaveConfirm = false">继续探索</Button>
             <Button class="flex-1 justify-center btn-danger" :icon="LogOut" @click="confirmLeave">确认离开</Button>
@@ -993,6 +1006,22 @@
       .filter(z => z.floors.length > 0)
   })
 
+  /** 离开矿洞提示文案 */
+  const leaveHint = computed(() => {
+    if (miningStore.isInSkullCavern) {
+      const floorData = miningStore.getActiveFloorData()
+      if (floorData?.isSafePoint) return `当前为安全点，进度将保存至第${miningStore.skullCavernFloor}层。`
+      const lastSafe = miningStore.skullSafePointFloor
+      return lastSafe > 0 ? `下次将从第${lastSafe + 1}层开始。` : '当前进度不会保留。'
+    }
+    return '当前进度不会保留。'
+  })
+
+  /** 骷髅矿穴可选安全点楼层（排除最高安全点，因为主按钮已默认从那里开始） */
+  const skullElevatorFloors = computed(() => {
+    return miningStore.getUnlockedSkullSafePoints().filter(sp => sp < miningStore.skullSafePointFloor)
+  })
+
   // ==================== 格子 UI 辅助 ====================
 
   /** 格子样式 */
@@ -1141,10 +1170,10 @@
     addLog(msg)
   }
 
-  const handleEnterSkullCavern = () => {
+  const handleEnterSkullCavern = (startFrom?: number) => {
     showElevatorModal.value = false
     showCombatItems.value = false
-    const msg = miningStore.enterSkullCavern()
+    const msg = miningStore.enterSkullCavern(startFrom)
     exploreLog.value = [msg]
     sfxClick()
     addLog(msg)

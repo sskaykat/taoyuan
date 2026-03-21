@@ -39,7 +39,7 @@ export const applyCropBlessing = (quality: Quality): Quality => {
 }
 
 // 模块级单例状态
-const selectedSeed = ref<string | null>(null)
+const selectedSeed = ref<{ cropId: string; quality?: Quality } | null>(null)
 
 /** 处理地块点击：翻耕/种植/浇水/收获 */
 export const handlePlotClick = (plotId: number) => {
@@ -94,12 +94,13 @@ export const handlePlotClick = (plotId: number) => {
       return
     }
   } else if (plot.state === 'tilled' && selectedSeed.value) {
-    const cropDef = getCropById(selectedSeed.value)
+    const cropDef = getCropById(selectedSeed.value.cropId)
     if (!cropDef) return
     if (!inventoryStore.hasItem(cropDef.seedId)) {
       addLog(`没有${cropDef.name}种子了。`)
       return
     }
+    const plantQuality = selectedSeed.value.quality
     const cropFarmingBuff = cookingStore.activeBuff?.type === 'farming' ? cookingStore.activeBuff.value / 100 : 0
     const cropRingFarmReduction = inventoryStore.getRingEffectValue('farming_stamina')
     const cropRingGlobalReduction = inventoryStore.getRingEffectValue('stamina_reduction')
@@ -118,7 +119,7 @@ export const handlePlotClick = (plotId: number) => {
       addLog('体力不足，无法播种。')
       return
     }
-    inventoryStore.removeItem(cropDef.seedId)
+    inventoryStore.removeItem(cropDef.seedId, 1, plantQuality)
     farmStore.plantCrop(plotId, cropDef.id)
     sfxPlant()
     showFloat(`-${cost}体力`, 'danger')

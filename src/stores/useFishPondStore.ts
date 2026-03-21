@@ -144,7 +144,7 @@ export const useFishPondStore = defineStore('fishPond', () => {
     if (idx === -1) return false
     const fish = pond.value.fish[idx]!
     const inventoryStore = useInventoryStore()
-    if (inventoryStore.isAllFull && !inventoryStore.items.some(s => s.itemId === fish.fishId && s.quantity < 99)) return false
+    if (inventoryStore.isAllFull && !inventoryStore.items.some(s => s.itemId === fish.fishId && s.quantity < 999)) return false
     inventoryStore.addItem(fish.fishId, 1)
     pond.value.fish.splice(idx, 1)
     // 如果正在繁殖的鱼被取出，取消繁殖
@@ -384,7 +384,7 @@ export const useFishPondStore = defineStore('fishPond', () => {
           const childGenetics = _breedGenetics(parentA.genetics, parentB.genetics)
           const def = getPondableFish(pond.value.breeding.fishId)
           if (def) {
-            // 品种配方匹配：检查父本品种组合是否产出高代品种
+            // 品种配方匹配：检查亲本品种组合是否产出高代品种
             let childBreedId: string | null = null
             let childName = def.name
             if (parentA.breedId && parentB.breedId) {

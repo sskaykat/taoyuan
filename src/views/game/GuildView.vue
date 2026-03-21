@@ -312,6 +312,10 @@
                 {{ shopModalItem.contributionCost ? `${shopModalItem.contributionCost} 贡献点` : `${shopModalItem.price}文` }}
               </span>
             </div>
+            <div class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">持有</span>
+              <span class="text-xs">{{ inventoryStore.getItemCount(shopModalItem.itemId) }}</span>
+            </div>
             <div v-if="shopModalItem.contributionCost" class="flex items-center justify-between mt-0.5">
               <span class="text-xs text-muted">持有贡献点</span>
               <span
@@ -580,7 +584,7 @@
     if (!item) return 1
     if (!guildStore.isShopItemUnlocked(item.itemId)) return 0
     if (item.equipType) return 1
-    let max = 99
+    let max = 999
     if (item.contributionCost) {
       max = Math.min(max, Math.floor(guildStore.contributionPoints / item.contributionCost))
     } else if (item.price > 0) {

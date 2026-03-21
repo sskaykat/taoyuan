@@ -87,16 +87,28 @@
     <div v-if="!handOver && isPlayerTurn && !animating" class="flex flex-wrap space-x-1 mb-2">
       <template v-if="toCall <= 0">
         <Button class="flex-1 justify-center" @click="doCheck">过牌</Button>
-        <Button class="flex-1 justify-center" @click="doRaise(tier.blind * 2)">加注{{ tier.blind * 2 }}</Button>
-        <Button class="flex-1 justify-center" @click="doRaise(tier.blind * 4)">加注{{ tier.blind * 4 }}</Button>
+        <Button
+          v-if="!dealerAllIn && playerStack >= tier.blind * 2"
+          class="flex-1 justify-center"
+          @click="doRaise(playerBetRound + tier.blind * 2)"
+        >
+          加注{{ tier.blind * 2 }}
+        </Button>
+        <Button
+          v-if="!dealerAllIn && playerStack >= tier.blind * 4"
+          class="flex-1 justify-center"
+          @click="doRaise(playerBetRound + tier.blind * 4)"
+        >
+          加注{{ tier.blind * 4 }}
+        </Button>
       </template>
       <template v-else>
         <Button class="flex-1 justify-center" @click="doCall">跟注{{ toCall }}</Button>
-        <Button v-if="playerStack > toCall" class="flex-1 justify-center" @click="doRaise(toCall + tier.blind * 2)">
+        <Button v-if="!dealerAllIn && playerStack > toCall" class="flex-1 justify-center" @click="doRaise(dealerBetRound + tier.blind * 2)">
           加注{{ toCall + tier.blind * 2 }}
         </Button>
       </template>
-      <Button class="flex-1 justify-center" @click="doAllIn">全押</Button>
+      <Button v-if="!dealerAllIn" class="flex-1 justify-center" @click="doAllIn">全押</Button>
       <Button class="flex-1 justify-center text-danger" @click="doFold">弃牌</Button>
     </div>
 

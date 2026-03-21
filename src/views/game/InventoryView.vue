@@ -554,6 +554,29 @@
             >
               使用
             </Button>
+            <!-- 丢弃 -->
+            <template v-if="!activeItem.locked">
+              <div v-if="discardMode" class="flex items-center space-x-1">
+                <input
+                  v-model.number="discardQty"
+                  type="number"
+                  :min="1"
+                  :max="activeItem.quantity"
+                  class="flex-1 bg-bg border border-accent/20 rounded-xs px-1.5 py-0.5 text-xs text-text w-12 text-center"
+                />
+                <Button class="flex-1 justify-center !bg-danger !text-text" @click="confirmDiscard">确认丢弃</Button>
+                <Button class="flex-1 justify-center" @click="cancelDiscard">取消</Button>
+              </div>
+              <Button
+                v-else
+                class="w-full justify-center text-danger border-danger/40"
+                :icon="Trash2"
+                :icon-size="12"
+                @click="enterDiscardMode"
+              >
+                丢弃
+              </Button>
+            </template>
           </div>
         </div>
       </div>
@@ -744,8 +767,8 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed } from 'vue'
-  import { Apple, Archive, ArrowDown01, ArrowRight, BookMarked, Filter, Lock, LockOpen, Package, X, Zap } from 'lucide-vue-next'
+  import { ref, computed, watch } from 'vue'
+  import { Apple, Archive, ArrowDown01, ArrowRight, BookMarked, Filter, Lock, LockOpen, Package, Trash2, X, Zap } from 'lucide-vue-next'
   import Button from '@/components/game/Button.vue'
   import { useCookingStore } from '@/stores/useCookingStore'
   import { useGameStore } from '@/stores/useGameStore'
@@ -1296,5 +1319,41 @@
     if (!inventoryStore.items.find(i => i.itemId === itemId && i.quality === quality)) {
       activeItemKey.value = null
     }
+  }
+
+  // === 丢弃物品 ===
+
+  const discardMode = ref(false)
+  const discardQty = ref(1)
+
+  watch(activeItemKey, () => {
+    discardMode.value = false
+  })
+
+  /** 进入丢弃模式 */
+  const enterDiscardMode = () => {
+    discardMode.value = true
+    discardQty.value = 1
+  }
+
+  /** 确认丢弃 */
+  const confirmDiscard = () => {
+    if (!activeItem.value) return
+    const { itemId, quality } = activeItem.value
+    const name = activeItemDef.value?.name ?? ''
+    const qty = Math.min(discardQty.value, activeItem.value.quantity)
+    if (qty <= 0) return
+    if (!inventoryStore.removeItem(itemId, qty, quality)) return
+    addLog(`丢弃了${name}×${qty}。`)
+    discardMode.value = false
+    // 物品消耗完则关闭弹窗
+    if (!inventoryStore.items.find(i => i.itemId === itemId && i.quality === quality)) {
+      activeItemKey.value = null
+    }
+  }
+
+  /** 取消丢弃 */
+  const cancelDiscard = () => {
+    discardMode.value = false
   }
 </script>

@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-accent text-sm">
         <Home :size="14" class="inline" />
-        畜棚
+        牧场
       </h3>
       <Button v-if="unpettedCount > 0" :icon="Hand" @click="handlePetAll">一键抚摸（{{ unpettedCount }}只）</Button>
     </div>
@@ -144,6 +144,9 @@
                 </template>
               </div>
               <div class="flex items-center space-x-1">
+                <Button class="py-0 px-1" :icon="Apple" :disabled="animal.wasFed" @click="handleFeedAnimal(animal.id, animal.name)">
+                  {{ animal.wasFed ? '已喂' : '喂食' }}
+                </Button>
                 <Button class="py-0 px-1" :icon="Hand" :disabled="animal.wasPetted" @click="handlePetAnimal(animal.id)">
                   {{ animal.wasPetted ? '已摸' : '抚摸' }}
                 </Button>
@@ -230,6 +233,14 @@
               </template>
             </div>
             <div class="flex items-center space-x-1">
+              <Button
+                class="py-0 px-1"
+                :icon="Apple"
+                :disabled="animalStore.getHorse.wasFed"
+                @click="handleFeedAnimal(animalStore.getHorse.id, animalStore.getHorse.name)"
+              >
+                {{ animalStore.getHorse.wasFed ? '已喂' : '喂食' }}
+              </Button>
               <Button
                 class="py-0 px-1"
                 :icon="Hand"
@@ -575,7 +586,7 @@
     if (!tutorialStore.enabled || gameStore.year > 1) return null
     const coopBuilt = animalStore.buildings.find(b => b.type === 'coop')?.built ?? false
     const barnBuilt = animalStore.buildings.find(b => b.type === 'barn')?.built ?? false
-    if (!coopBuilt && !barnBuilt) return '先去商铺的万物铺建造鸡舍或畜棚，然后就可以购买和饲养动物了。'
+    if (!coopBuilt && !barnBuilt) return '先去商铺的万物铺建造鸡舍或牧场，然后就可以购买和饲养动物了。'
     if (animalStore.animals.length > 0 && animalStore.animals.every(a => !a.wasPetted))
       return '每天抚摸动物可以增进友好度，「一键抚摸」可以批量操作。'
     return null
@@ -932,6 +943,18 @@
     addLog(result.message)
   }
 
+  const handleFeedAnimal = (animalId: string, animalName: string) => {
+    const success = animalStore.feedAnimal(animalId, selectedFeed.value)
+    if (success) {
+      addLog(`用${selectedFeedName.value}喂食了${animalName}。`)
+      const tr = gameStore.advanceTime(ACTION_TIME_COSTS.petAnimal)
+      if (tr.message) addLog(tr.message)
+      if (tr.passedOut) handleEndDay()
+    } else {
+      addLog(`${selectedFeedName.value}不足，无法喂食。`)
+    }
+  }
+
   const handleFeedAll = () => {
     const result = animalStore.feedAll(selectedFeed.value)
     const feedName = selectedFeedName.value
@@ -955,7 +978,7 @@
     const feed = FEED_DEFS.find(f => f.id === selectedFeed.value)
     if (!feed) return
     // 检查背包主区是否有空间（已有同类栈或有空位），防止溢出到临时背包导致无法使用
-    const hasStack = inventoryStore.items.some(s => s.itemId === feed.id && s.quality === 'normal' && s.quantity < 99)
+    const hasStack = inventoryStore.items.some(s => s.itemId === feed.id && s.quality === 'normal' && s.quantity < 999)
     if (!hasStack && inventoryStore.isFull) {
       addLog('背包已满，无法购买。')
       return

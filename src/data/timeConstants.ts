@@ -88,7 +88,7 @@ export const ACTION_TIME_COSTS = {
   craftSprinkler: 0.17,
   craftFertilizer: 0.17,
   craftJadeRing: 0.17,
-  // 畜棚
+  // 牧场
   feedAnimals: 0.5,
   petAnimal: 0.17,
   batchPet: 0.5,

@@ -164,8 +164,8 @@ export const useProcessingStore = defineStore('processing', () => {
     return getLowestCombinedQuality(itemId)
   }
 
-  /** 向已放置的机器投入原料开始加工 */
-  const startProcessing = (slotIndex: number, recipeId: string): boolean => {
+  /** 向已放置的机器投入原料开始加工。specifiedQuality 可指定消耗的品质 */
+  const startProcessing = (slotIndex: number, recipeId: string, specifiedQuality?: Quality): boolean => {
     const slot = machines.value[slotIndex]
     if (!slot || slot.recipeId !== null) return false // 正在加工中
     const recipe = getProcessingRecipeById(recipeId)
@@ -174,9 +174,13 @@ export const useProcessingStore = defineStore('processing', () => {
     // 消耗输入材料（蜂箱无需输入），记录投入品质
     let quality: Quality = 'normal'
     if (recipe.inputItemId !== null) {
-      quality = getLowestQuality(recipe.inputItemId)
-      // 不指定品质消耗，允许混合品质投入（按normal→supreme顺序消耗）
-      if (!removeCombinedItem(recipe.inputItemId, recipe.inputQuantity)) return false
+      if (specifiedQuality !== undefined) {
+        quality = specifiedQuality
+        if (!removeCombinedItem(recipe.inputItemId, recipe.inputQuantity, specifiedQuality)) return false
+      } else {
+        quality = getLowestQuality(recipe.inputItemId)
+        if (!removeCombinedItem(recipe.inputItemId, recipe.inputQuantity)) return false
+      }
     }
 
     slot.recipeId = recipeId
@@ -341,6 +345,15 @@ export const useProcessingStore = defineStore('processing', () => {
                 inventoryStore.addItem(recipe.outputItemId, recipe.outputQuantity, outputQuality)
               }
               collected.push(recipe.name)
+
+              // 种子制造机额外触发育种种子生成
+              if (slot.machineType === 'seed_maker' && slot.inputItemId) {
+                const breedingStore = useBreedingStore()
+                const farmingLevel = skillStore.farmingLevel
+                if (breedingStore.trySeedMakerGeneticSeed(slot.inputItemId, farmingLevel)) {
+                  addLog('种子制造机额外产出了一颗育种种子！')
+                }
+              }
 
               // 尝试从虚空原料箱取材料开始下一轮
               const available = warehouseStore.getChestItemCount(voidInput.id, recipe.inputItemId)

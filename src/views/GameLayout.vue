@@ -543,7 +543,7 @@
   // 注册天数标签获取器
   _registerDayLabelGetter(() => `第${gameStore.year}年 ${SEASON_NAMES[gameStore.season]} 第${gameStore.day}天`)
 
-  /** 按天分组的日志（最新天在前） */
+  /** 按天分组的日志（最新天在前，每天内也倒序） */
   const groupedLogs = computed(() => {
     const groups: { label: string; messages: string[] }[] = []
     let currentLabel: string | null = null
@@ -554,6 +554,7 @@
       }
       groups[groups.length - 1]!.messages.push(entry.msg)
     }
+    for (const g of groups) g.messages.reverse()
     return groups.reverse()
   })
 

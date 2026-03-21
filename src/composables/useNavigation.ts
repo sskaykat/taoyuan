@@ -62,7 +62,7 @@ export type PanelKey =
 
 export const TABS: { key: PanelKey; label: string; icon: Component; getIcon?: () => Component }[] = [
   { key: 'farm', label: '农场', icon: Wheat },
-  { key: 'animal', label: '畜棚', icon: Egg },
+  { key: 'animal', label: '牧场', icon: Egg },
   { key: 'cottage', label: '小屋', icon: Home, getIcon: () => (useNpcStore().getSpouse() ? Heart : Home) },
   { key: 'home', label: '设施', icon: Building },
   { key: 'breeding', label: '育种', icon: FlaskConical },

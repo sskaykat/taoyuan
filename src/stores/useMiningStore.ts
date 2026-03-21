@@ -61,6 +61,7 @@ export const useMiningStore = defineStore('mining', () => {
   const isInSkullCavern = ref(false)
   const skullCavernFloor = ref(0)
   const skullCavernBestFloor = ref(0)
+  const skullSafePointFloor = ref(0)
   const cachedSkullFloorData = ref<SkullCavernFloorDef | null>(null)
 
   /** 战斗状态 */
@@ -127,7 +128,7 @@ export const useMiningStore = defineStore('mining', () => {
         zone: 'abyss',
         ores: sc.ores,
         monsters: sc.monsters.map(m => scaleMonster(m, sc.scaleFactor)),
-        isSafePoint: false,
+        isSafePoint: sc.isSafePoint,
         specialType: sc.specialType
       }
     }
@@ -664,20 +665,21 @@ export const useMiningStore = defineStore('mining', () => {
     return `进入云隐矿洞，当前第${currentFloor.value}层。`
   }
 
-  /** 进入骷髅矿穴 */
-  const enterSkullCavern = (): string => {
+  /** 进入骷髅矿穴（可选择起始安全点楼层） */
+  const enterSkullCavern = (startFromSafePoint?: number): string => {
     if (!isSkullCavernUnlocked()) return '需要先击败60层BOSS才能进入骷髅矿穴。'
     isExploring.value = true
     isInSkullCavern.value = true
-    skullCavernFloor.value = 1
-    cacheSkullFloor(1)
+    const baseFloor = startFromSafePoint ?? skullSafePointFloor.value
+    skullCavernFloor.value = baseFloor + 1
+    cacheSkullFloor(skullCavernFloor.value)
     sessionLoot.value = []
 
     _generateGrid()
 
     _checkAutoBossCombat()
 
-    return `进入骷髅矿穴，当前第1层。`
+    return `进入骷髅矿穴，当前第${skullCavernFloor.value}层。`
   }
 
   /** 检查是否自动触发BOSS战（BOSS格在入口邻格时） */
@@ -689,6 +691,15 @@ export const useMiningStore = defineStore('mining', () => {
   const getUnlockedSafePoints = (): number[] => {
     const points: number[] = [0] // 0 = 从第1层开始
     for (let f = 5; f <= safePointFloor.value; f += 5) {
+      points.push(f)
+    }
+    return points
+  }
+
+  /** 获取骷髅矿穴已解锁的安全点 */
+  const getUnlockedSkullSafePoints = (): number[] => {
+    const points: number[] = [0] // 0 = 从第1层开始
+    for (let f = 10; f <= skullSafePointFloor.value; f += 10) {
       points.push(f)
     }
     return points
@@ -1143,12 +1154,17 @@ export const useMiningStore = defineStore('mining', () => {
     }
 
     if (isInSkullCavern.value) {
-      // 骷髅矿穴：无上限，无安全点
+      // 骷髅矿穴：无上限，每10层安全点
       skullCavernFloor.value++
       cacheSkullFloor(skullCavernFloor.value)
       if (skullCavernFloor.value > skullCavernBestFloor.value) {
         skullCavernBestFloor.value = skullCavernFloor.value
         useAchievementStore().recordSkullCavernFloor(skullCavernFloor.value)
+      }
+      // 到达新安全点时保存
+      const skullFloor = cachedSkullFloorData.value
+      if (skullFloor?.isSafePoint && skullCavernFloor.value > skullSafePointFloor.value) {
+        skullSafePointFloor.value = skullCavernFloor.value
       }
     } else {
       // 主矿洞：最多 120 层
@@ -1200,6 +1216,13 @@ export const useMiningStore = defineStore('mining', () => {
       const floor = getActiveFloorData()
       if (floor?.isSafePoint && currentFloor.value > safePointFloor.value) {
         safePointFloor.value = currentFloor.value
+      }
+    }
+    // 骷髅矿穴：离开前保存安全点
+    if (isInSkullCavern.value) {
+      const skullFloor = cachedSkullFloorData.value
+      if (skullFloor?.isSafePoint && skullCavernFloor.value > skullSafePointFloor.value) {
+        skullSafePointFloor.value = skullCavernFloor.value
       }
     }
     isExploring.value = false
@@ -1369,6 +1392,7 @@ export const useMiningStore = defineStore('mining', () => {
       isInSkullCavern: isInSkullCavern.value,
       skullCavernFloor: skullCavernFloor.value,
       skullCavernBestFloor: skullCavernBestFloor.value,
+      skullSafePointFloor: skullSafePointFloor.value,
       guildBadgeBonusAttack: guildBadgeBonusAttack.value,
       guildBonusMaxHp: guildBonusMaxHp.value,
       guildBonusDropRate: guildBonusDropRate.value,
@@ -1397,6 +1421,7 @@ export const useMiningStore = defineStore('mining', () => {
     isInSkullCavern.value = ((data as Record<string, unknown>).isInSkullCavern as boolean) ?? false
     skullCavernFloor.value = ((data as Record<string, unknown>).skullCavernFloor as number) ?? 0
     skullCavernBestFloor.value = ((data as Record<string, unknown>).skullCavernBestFloor as number) ?? 0
+    skullSafePointFloor.value = ((data as Record<string, unknown>).skullSafePointFloor as number) ?? 0
 
     // 格子状态不序列化——读档后玩家在矿洞外
     isExploring.value = false
@@ -1416,6 +1441,7 @@ export const useMiningStore = defineStore('mining', () => {
     isInSkullCavern,
     skullCavernFloor,
     skullCavernBestFloor,
+    skullSafePointFloor,
     inCombat,
     combatMonster,
     combatMonsterHp,
@@ -1440,6 +1466,7 @@ export const useMiningStore = defineStore('mining', () => {
     isSkullCavernUnlocked,
     getActiveFloorData,
     getUnlockedSafePoints,
+    getUnlockedSkullSafePoints,
     canRevealTile,
     engageRevealedMonster,
     revealTile,

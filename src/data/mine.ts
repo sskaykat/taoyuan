@@ -564,7 +564,7 @@ export interface SkullCavernFloorDef {
   monsters: MonsterDef[]
   specialType: MineFloorDef['specialType']
   scaleFactor: number
-  isSafePoint: false
+  isSafePoint: boolean
 }
 
 /** 骷髅矿穴矿石池 */
@@ -615,7 +615,7 @@ export const generateSkullCavernFloor = (floor: number): SkullCavernFloorDef => 
     monsters: monsterPool,
     specialType,
     scaleFactor,
-    isSafePoint: false
+    isSafePoint: floor % 10 === 0
   }
 }
 

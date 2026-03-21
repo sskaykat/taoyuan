@@ -3,7 +3,7 @@ import type { PondBreedDef } from '@/types/fishPond'
 // === 品种分布 ===
 // 13个基础鱼种，共5代400品种
 // Gen1=200, Gen2=100, Gen3=50, Gen4=30, Gen5=20
-// 层级链条：Gen N 的父本来自 Gen N-1，父本组合无重复
+// 层级链条：Gen N 的亲本来自 Gen N-1，亲本组合无重复
 
 // [baseFishId, suffix, gen1, gen2, gen3, gen4, gen5]
 const SPECIES_CFG: [string, string, number, number, number, number, number][] = [
@@ -31,7 +31,7 @@ const G4_PREFIXES = ['太古', '鸿蒙', '混沌']
 const G5_PREFIXES = ['化龙', '浴火']
 
 // === 配对算法 ===
-// 从 parentCount 个父本中生成 childCount 个唯一配对
+// 从 parentCount 个亲本中生成 childCount 个唯一配对
 
 const makePairs = (parentCount: number, childCount: number): [number, number][] => {
   const pairs: [number, number][] = []
@@ -181,7 +181,7 @@ export const getBreedsBySpecies = (baseFishId: string): PondBreedDef[] =>
 export const getGen1BreedsForFish = (fishId: string): PondBreedDef[] =>
   POND_BREEDS.filter(b => b.generation === 1 && b.baseFishId === fishId)
 
-/** 根据父本品种ID查找子代品种（顺序无关） */
+/** 根据亲本品种ID查找子代品种（顺序无关） */
 export const findBreedByParents = (breedIdA: string, breedIdB: string): PondBreedDef | undefined =>
   POND_BREEDS.find(b =>
     (b.parentBreedA === breedIdA && b.parentBreedB === breedIdB) ||

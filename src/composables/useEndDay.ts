@@ -501,18 +501,24 @@ export const handleEndDay = () => {
   }
 
   // 雇工喂食结算（必须在 animalStore.dailyUpdate 之前，确保喂食状态生效）
+  // 每天仅消耗一次草料：此处喂食用于过夜检查，dailyUpdate 后用 markAllFed 标记新一天
   const helperFeedResult = npcStore.processDailyHelpers(['feed'])
   for (const msg of helperFeedResult.messages) addLog(msg)
+  const helperFeedSuccess = helperFeedResult.allFed
 
-  // 配偶喂食（必须在 animalStore.dailyUpdate 之前）
   const spouse = npcStore.getSpouse()
-  if (spouse) {
+  let spouseFedSuccess = false
+  if (spouse && !helperFeedSuccess) {
     const bonusChanceEve = spouse.friendship >= 2500 ? 0.1 : 0
     if (Math.random() < 0.4 + bonusChanceEve) {
       const result = animalStore.feedAll()
       if (result.fedCount > 0) {
         const spouseDefEve = getNpcById(spouse.npcId)
         addLog(`${spouseDefEve?.name ?? '配偶'}帮你喂了所有牲畜。`)
+        spouseFedSuccess = result.noFeedCount === 0
+      } else if (result.noFeedCount > 0) {
+        const spouseDefEve = getNpcById(spouse.npcId)
+        addLog(`${spouseDefEve?.name ?? '配偶'}想帮你喂牲畜，但草料不足。`)
       }
     }
   }
@@ -645,6 +651,30 @@ export const handleEndDay = () => {
     }
   }
 
+  // === 晚间结算（旧日期） ===
+
+  // 出货箱结算
+  const shopStore = useShopStore()
+  const shippingIncome = shopStore.processShippingBox()
+  if (shippingIncome > 0) {
+    playerStore.earnMoney(shippingIncome)
+    addLog(`出货箱结算：收入${shippingIncome}文。`)
+  }
+
+  // 委托每日更新（当天结算：倒计时递减、过期处理）
+  const expiredQuests = questStore.dailyUpdate()
+  for (const eq of expiredQuests) {
+    addLog(`委托「${eq.description}」已过期。`)
+  }
+
+  // 主线任务进度检查
+  questStore.updateMainQuestProgress()
+
+  // === 日期推进 ===
+  const { seasonChanged, oldSeason } = gameStore.nextDay()
+
+  // === 晨间结算（新日期） ===
+
   // 动物产出
   const animalResult = animalStore.dailyUpdate()
   if (animalResult.products.length > 0) {
@@ -663,19 +693,9 @@ export const handleEndDay = () => {
     addLog(`${animalResult.healed.join('、')}吃饱后恢复了健康。`)
   }
 
-  // 晨间喂食：雇工和配偶在新一天开始时标记已喂食，让玩家当天可以直接放牧
-  // 使用 markAllFed 标记已喂食状态（不消耗饲料，饲料已在上面的结算中消耗过）
-  const hasHelperFeed = npcStore.hiredHelpers.some(h => h.task === 'feed')
-  if (hasHelperFeed) {
+  // 晨间标记：dailyUpdate 已重置 wasFed，若前面喂食成功则标记新一天已喂食（不再消耗草料）
+  if (helperFeedSuccess || spouseFedSuccess) {
     animalStore.markAllFed()
-  }
-  if (spouse && !hasHelperFeed) {
-    const bonusChanceFeed = spouse.friendship >= 2500 ? 0.1 : 0
-    if (Math.random() < 0.4 + bonusChanceFeed) {
-      animalStore.markAllFed()
-      const spouseDefFeed = getNpcById(spouse.npcId)
-      addLog(`${spouseDefFeed?.name ?? '配偶'}一早就帮你喂好了牲畜。`)
-    }
   }
 
   // 晨间工作：雇工浇水/收获/除草
@@ -820,15 +840,6 @@ export const handleEndDay = () => {
     addLog(`解锁了钱袋物品：${name}！`)
   }
 
-  // 委托每日更新（当天结算：倒计时递减、过期处理）
-  const expiredQuests = questStore.dailyUpdate()
-  for (const eq of expiredQuests) {
-    addLog(`委托「${eq.description}」已过期。`)
-  }
-
-  // 主线任务进度检查
-  questStore.updateMainQuestProgress()
-
   // 婚礼倒计时
   const weddingResult = npcStore.dailyWeddingUpdate()
   if (weddingResult.weddingToday && weddingResult.npcId) {
@@ -861,16 +872,6 @@ export const handleEndDay = () => {
     const spouseDef2 = getNpcById(npcStore.getSpouse()?.npcId ?? '')
     addLog(`${spouseDef2?.name ?? '配偶'}似乎有话想和你说……`)
   }
-
-  // 出货箱结算
-  const shopStore = useShopStore()
-  const shippingIncome = shopStore.processShippingBox()
-  if (shippingIncome > 0) {
-    playerStore.earnMoney(shippingIncome)
-    addLog(`出货箱结算：收入${shippingIncome}文。`)
-  }
-
-  const { seasonChanged, oldSeason } = gameStore.nextDay()
 
   // 为新的一天生成委托（在 nextDay 之后，使用新季节和新日期）
   questStore.generateDailyQuests(gameStore.season, gameStore.day)

@@ -40,6 +40,12 @@
         </button>
       </div>
 
+      <!-- 只显示可加工 -->
+      <label class="flex items-center space-x-1 mb-2 cursor-pointer select-none">
+        <input type="checkbox" v-model="onlyAvailable" class="accent-accent" />
+        <span class="text-[10px] text-muted">只显示有材料的配方</span>
+      </label>
+
       <!-- 空状态 -->
       <div v-if="processingStore.machines.length === 0" class="flex flex-col items-center justify-center py-8">
         <Boxes :size="36" class="text-accent/20 mb-2" />
@@ -47,59 +53,114 @@
         <p class="text-[10px] text-muted/50 mt-0.5">切换到「制造」标签制造一台加工机器吧</p>
       </div>
 
-      <!-- 机器列表 -->
-      <div v-else class="flex flex-col space-y-1.5">
-        <div
-          v-for="(slot, idx) in processingStore.machines"
-          :key="idx"
-          class="border rounded-xs p-2"
-          :class="slot.ready ? 'border-success/30' : 'border-accent/20'"
-        >
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-xs" :class="slot.ready ? 'text-success' : 'text-accent'">{{ getMachineName(slot.machineType) }}</span>
-            <button class="text-muted hover:text-danger" @click="handleRemoveMachine(idx)">
-              <Trash2 :size="12" />
-            </button>
+      <!-- 机器列表（按类型分组） -->
+      <div v-else class="flex flex-col space-y-2">
+        <div v-for="group in machineGroups" :key="group.machineType" class="border border-accent/10 rounded-xs">
+          <!-- 分组标题（可折叠） -->
+          <div
+            class="flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-accent/5 select-none"
+            @click="toggleGroup(group.machineType)"
+          >
+            <div class="flex items-center space-x-1">
+              <span class="text-xs text-accent">{{ group.name }}</span>
+              <span class="text-[10px] text-muted">×{{ group.slots.length }}</span>
+              <span v-if="group.slots.some(s => s.slot.ready)" class="text-[10px] text-success">
+                ({{ group.slots.filter(s => s.slot.ready).length }}可收取)
+              </span>
+            </div>
+            <span class="text-[10px] text-muted">{{ collapsedGroups.has(group.machineType) ? '▸' : '▾' }}</span>
           </div>
 
-          <!-- 空闲：选择配方 -->
-          <div v-if="!slot.recipeId">
-            <div v-if="processingStore.getAvailableRecipes(slot.machineType).length > 0" class="grid space-y-1">
-              <Button
-                v-for="recipe in processingStore.getAvailableRecipes(slot.machineType)"
-                :key="recipe.id"
-                :disabled="recipe.inputItemId !== null && !hasCombinedItem(recipe.inputItemId, recipe.inputQuantity)"
-                @click="handleStartProcessing(idx, recipe.id)"
-              >
-                {{ recipe.name }}
-                <span v-if="recipe.inputItemId" class="text-muted">
-                  ({{ getItemName(recipe.inputItemId) }} {{ getCombinedItemCount(recipe.inputItemId) }}/{{ recipe.inputQuantity }})
-                </span>
-              </Button>
-            </div>
-            <p v-else class="text-xs text-muted">无可用配方</p>
-          </div>
+          <!-- 展开的机器明细 -->
+          <div v-if="!collapsedGroups.has(group.machineType)" class="flex flex-col space-y-1.5 px-2 pb-2">
+            <div
+              v-for="{ slot, originalIndex } in group.slots"
+              :key="originalIndex"
+              class="border rounded-xs p-2"
+              :class="slot.ready ? 'border-success/30' : 'border-accent/20'"
+            >
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs" :class="slot.ready ? 'text-success' : 'text-accent'">{{ group.name }}</span>
+                <button class="text-muted hover:text-danger" @click="handleRemoveMachine(originalIndex)">
+                  <Trash2 :size="12" />
+                </button>
+              </div>
 
-          <!-- 加工中 -->
-          <div v-else-if="!slot.ready">
-            <div class="flex items-center justify-between text-xs mb-1">
-              <span class="text-muted">{{ getRecipeName(slot.recipeId) }}</span>
-              <span class="text-muted">{{ slot.daysProcessed }}/{{ slot.totalDays }}天</span>
-            </div>
-            <div class="h-1 bg-bg rounded-xs border border-accent/10 mb-1.5">
-              <div
-                class="h-full bg-accent rounded-xs transition-all"
-                :style="{ width: Math.floor((slot.daysProcessed / slot.totalDays) * 100) + '%' }"
-              />
-            </div>
-            <Button class="w-full justify-center" :icon="X" :icon-size="10" @click="handleCancelProcessing(idx)">取消加工</Button>
-          </div>
+              <!-- 空闲：选择配方 -->
+              <div v-if="!slot.recipeId">
+                <!-- 种子制造机：按品质展开 -->
+                <template v-if="slot.machineType === 'seed_maker'">
+                  <div v-if="getSeedMakerQualityRecipes(slot.machineType).length > 0" class="grid space-y-1">
+                    <Button
+                      v-for="qr in getSeedMakerQualityRecipes(slot.machineType)"
+                      :key="qr.recipe.id + ':' + qr.quality"
+                      :disabled="!qr.available"
+                      @click="handleStartProcessing(originalIndex, qr.recipe.id, qr.quality)"
+                    >
+                      {{ qr.recipe.name }}
+                      <span
+                        v-if="qr.quality !== 'normal'"
+                        :class="{
+                          'text-quality-fine': qr.quality === 'fine',
+                          'text-quality-excellent': qr.quality === 'excellent',
+                          'text-quality-supreme': qr.quality === 'supreme'
+                        }"
+                      >
+                        [{{ QUALITY_NAMES[qr.quality] }}]
+                      </span>
+                      <span class="text-muted">({{ qr.count }}/{{ qr.recipe.inputQuantity }})</span>
+                    </Button>
+                  </div>
+                  <p v-else class="text-xs text-muted">{{ onlyAvailable ? '没有材料足够的配方' : '无可用配方' }}</p>
+                </template>
+                <!-- 其他机器：普通配方列表 -->
+                <template v-else>
+                  <div v-if="getFilteredRecipes(slot.machineType).length > 0" class="grid space-y-1">
+                    <Button
+                      v-for="recipe in getFilteredRecipes(slot.machineType)"
+                      :key="recipe.id"
+                      :disabled="recipe.inputItemId !== null && !hasCombinedItem(recipe.inputItemId, recipe.inputQuantity)"
+                      @click="handleStartProcessing(originalIndex, recipe.id)"
+                    >
+                      {{ recipe.name }}
+                      <span v-if="recipe.inputItemId" class="text-muted">
+                        ({{ getItemName(recipe.inputItemId) }} {{ getCombinedItemCount(recipe.inputItemId) }}/{{ recipe.inputQuantity }})
+                      </span>
+                    </Button>
+                  </div>
+                  <p v-else class="text-xs text-muted">{{ onlyAvailable ? '没有材料足够的配方' : '无可用配方' }}</p>
+                </template>
+              </div>
 
-          <!-- 完成 -->
-          <div v-else>
-            <Button class="w-full justify-center !bg-accent !text-bg" :icon="Package" :icon-size="12" @click="handleCollect(idx)">
-              收取 {{ getRecipeOutputName(slot.recipeId) }}
-            </Button>
+              <!-- 加工中 -->
+              <div v-else-if="!slot.ready">
+                <div class="flex items-center justify-between text-xs mb-1">
+                  <span class="text-muted">{{ getRecipeName(slot.recipeId) }}</span>
+                  <span class="text-muted">{{ slot.daysProcessed }}/{{ slot.totalDays }}天</span>
+                </div>
+                <div class="h-1 bg-bg rounded-xs border border-accent/10 mb-1.5">
+                  <div
+                    class="h-full bg-accent rounded-xs transition-all"
+                    :style="{ width: Math.floor((slot.daysProcessed / slot.totalDays) * 100) + '%' }"
+                  />
+                </div>
+                <Button class="w-full justify-center" :icon="X" :icon-size="10" @click="handleCancelProcessing(originalIndex)">
+                  取消加工
+                </Button>
+              </div>
+
+              <!-- 完成 -->
+              <div v-else>
+                <Button
+                  class="w-full justify-center !bg-accent !text-bg"
+                  :icon="Package"
+                  :icon-size="12"
+                  @click="handleCollect(originalIndex)"
+                >
+                  收取 {{ getRecipeOutputName(slot.recipeId) }}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -308,7 +369,8 @@
   import { ref, computed } from 'vue'
   import { Hammer, Trash2, Package, Boxes, X, ArrowUpCircle } from 'lucide-vue-next'
   import Button from '@/components/game/Button.vue'
-  import type { MachineType, AnimalBuildingType, ChestTier } from '@/types'
+  import type { MachineType, AnimalBuildingType, ChestTier, Quality } from '@/types'
+  import { QUALITY_NAMES } from '@/composables/useFarmActions'
   import { useAnimalStore } from '@/stores/useAnimalStore'
   import { useFarmStore } from '@/stores/useFarmStore'
   import { useGameStore } from '@/stores/useGameStore'
@@ -348,6 +410,77 @@
   const warehouseStore = useWarehouseStore()
 
   const activeTab = ref<'process' | 'craft'>('process')
+  const onlyAvailable = ref(false)
+
+  const getFilteredRecipes = (machineType: MachineType) => {
+    const recipes = processingStore.getAvailableRecipes(machineType)
+    if (!onlyAvailable.value) return recipes
+    return recipes.filter(r => r.inputItemId === null || hasCombinedItem(r.inputItemId, r.inputQuantity))
+  }
+
+  const QUALITY_ORDER: Quality[] = ['normal', 'fine', 'excellent', 'supreme']
+
+  /** 种子制造机：按品质展开配方列表 */
+  const getSeedMakerQualityRecipes = (machineType: MachineType) => {
+    const recipes = processingStore.getAvailableRecipes(machineType)
+    const result: { recipe: (typeof recipes)[number]; quality: Quality; count: number; available: boolean }[] = []
+    for (const recipe of recipes) {
+      if (!recipe.inputItemId) continue
+      let hasAny = false
+      for (const q of QUALITY_ORDER) {
+        const count = getCombinedItemCount(recipe.inputItemId, q)
+        if (count > 0) {
+          hasAny = true
+          result.push({ recipe, quality: q, count, available: count >= recipe.inputQuantity })
+        }
+      }
+      // 无任何品质库存时，仅在非筛选模式下显示一条（普通品质，不可用）
+      if (!hasAny && !onlyAvailable.value) {
+        result.push({ recipe, quality: 'normal' as Quality, count: 0, available: false })
+      }
+    }
+    return result
+  }
+
+  // === 机器分组（相同设备排到一起，可折叠） ===
+
+  interface MachineGroup {
+    machineType: MachineType
+    name: string
+    slots: { slot: (typeof processingStore.machines)[number]; originalIndex: number }[]
+  }
+
+  const machineGroups = computed((): MachineGroup[] => {
+    const groupMap = new Map<MachineType, MachineGroup>()
+    // 按 PROCESSING_MACHINES 定义顺序作为排序基准
+    const typeOrder = new Map(PROCESSING_MACHINES.map((m, i) => [m.id as MachineType, i]))
+    for (let i = 0; i < processingStore.machines.length; i++) {
+      const slot = processingStore.machines[i]!
+      let group = groupMap.get(slot.machineType)
+      if (!group) {
+        group = { machineType: slot.machineType, name: getMachineName(slot.machineType), slots: [] }
+        groupMap.set(slot.machineType, group)
+      }
+      group.slots.push({ slot, originalIndex: i })
+    }
+    return [...groupMap.values()].sort((a, b) => (typeOrder.get(a.machineType) ?? 99) - (typeOrder.get(b.machineType) ?? 99))
+  })
+
+  /** 折叠状态：存储已折叠的机器类型 */
+  const collapsedGroups = ref(new Set<MachineType>())
+
+  const toggleGroup = (type: MachineType) => {
+    if (collapsedGroups.value.has(type)) {
+      collapsedGroups.value.delete(type)
+    } else {
+      collapsedGroups.value.add(type)
+    }
+  }
+
+  /** 获取某类型机器的已有数量 */
+  const getMachineCountByType = (type: MachineType): number => {
+    return processingStore.machines.filter(m => m.machineType === type).length
+  }
 
   // === 工坊升级 ===
 
@@ -396,7 +529,7 @@
   const maxCraftable = computed(() => {
     const item = craftModal.value
     if (!item?.batchable) return 1
-    let max = 99
+    let max = 999
     for (const m of item.materials) {
       max = Math.min(max, Math.floor(getCombinedItemCount(m.itemId) / m.quantity))
     }
@@ -461,6 +594,7 @@
         cost: m.craftMoney,
         onCraft: () => handleCraftMachine(m.id),
         canCraft: () => processingStore.canCraft(m.craftCost, m.craftMoney) && processingStore.machineCount < processingStore.maxMachines,
+        badge: `已有${getMachineCountByType(m.id)}`,
         batchable: true,
         maxBatch: () => processingStore.maxMachines - processingStore.machineCount
       }))
@@ -539,7 +673,7 @@
           ? [
               {
                 id: 'auto_petter_barn',
-                name: `${AUTO_PETTER.name}（畜棚）`,
+                name: `${AUTO_PETTER.name}（牧场）`,
                 description: AUTO_PETTER.description,
                 materials: AUTO_PETTER.craftCost,
                 cost: AUTO_PETTER.craftMoney,
@@ -923,11 +1057,12 @@
 
   // === 加工处理 ===
 
-  const handleStartProcessing = (slotIndex: number, recipeId: string) => {
-    if (processingStore.startProcessing(slotIndex, recipeId)) {
+  const handleStartProcessing = (slotIndex: number, recipeId: string, quality?: Quality) => {
+    if (processingStore.startProcessing(slotIndex, recipeId, quality)) {
       sfxClick()
       const recipe = getProcessingRecipeById(recipeId)
-      addLog(`开始加工${recipe?.name ?? recipeId}，需要${recipe?.processingDays ?? '?'}天。`)
+      const qualityLabel = quality && quality !== 'normal' ? `(${QUALITY_NAMES[quality]})` : ''
+      addLog(`开始加工${recipe?.name ?? recipeId}${qualityLabel}，需要${recipe?.processingDays ?? '?'}天。`)
     } else {
       addLog('原料不足或机器正在使用。')
     }

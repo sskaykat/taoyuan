@@ -118,6 +118,35 @@
 
     <!-- ===== 图鉴 Tab ===== -->
     <template v-if="tab === 'compendium'">
+      <!-- 育种规则 -->
+      <div class="border border-accent/10 rounded-xs mb-2">
+        <button class="w-full flex items-center justify-between p-2 text-xs text-accent hover:bg-accent/5" @click="showRules = !showRules">
+          <span>育种规则</span>
+          <ChevronDown :size="12" :class="{ 'transform rotate-180': showRules }" />
+        </button>
+        <div v-if="showRules" class="px-2 pb-2 border-t border-accent/10">
+          <ul class="text-xs text-muted leading-relaxed mt-1.5 flex flex-col space-y-1">
+            <li>
+              · 收获作物时有
+              <span class="text-accent">30%+种植等级×3%</span>
+              概率获得育种种子
+            </li>
+            <li>· 种子制造机加工作物也有概率产出育种种子</li>
+            <li>· 育种种子拥有独立遗传属性（甜度/产量/抗性），与物品品质无关</li>
+            <li>
+              ·
+              <span class="text-accent">同种培育</span>
+              ：两颗相同作物的育种种子杂交，可提升后代遗传属性
+            </li>
+            <li>
+              ·
+              <span class="text-accent">异种杂交</span>
+              ：两颗不同作物的育种种子杂交，当亲本平均属性达标时可发现新品种
+            </li>
+            <li>· 先通过同种培育提升属性，再尝试异种杂交效果更佳</li>
+          </ul>
+        </div>
+      </div>
       <!-- 说明提示 -->
       <div v-if="totalDiscovered === 0" class="border border-accent/10 rounded-xs p-2 mb-2">
         <p class="text-xs text-muted leading-relaxed">
@@ -125,7 +154,7 @@
           <span class="text-accent">异种杂交</span>
           发现的新品种。将两种
           <span class="text-accent">不同作物</span>
-          的育种种子放入育种台，当父本平均属性达标时即可发现杂交品种。
+          的育种种子放入育种台，当亲本平均属性达标时即可发现杂交品种。
         </p>
         <p class="text-xs text-muted mt-1 leading-relaxed">
           提示：先通过
@@ -293,11 +322,11 @@
               <span class="text-xs">{{ TIER_LABELS[getHybridTier(activeHybrid.id)] ?? '一' }}代</span>
             </div>
             <div class="flex items-center justify-between mt-0.5">
-              <span class="text-xs text-muted">父本A</span>
+              <span class="text-xs text-muted">亲本A</span>
               <span class="text-xs">{{ getCropName(activeHybrid.parentCropA) }}</span>
             </div>
             <div class="flex items-center justify-between mt-0.5">
-              <span class="text-xs text-muted">父本B</span>
+              <span class="text-xs text-muted">亲本B</span>
               <span class="text-xs">{{ getCropName(activeHybrid.parentCropB) }}</span>
             </div>
             <div class="flex items-center justify-between mt-0.5">
@@ -500,7 +529,7 @@
 
 <script setup lang="ts">
   import { ref, computed } from 'vue'
-  import { FlaskConical, Plus, Check, X, Dna, Trash2, Sprout, PackageOpen, Star, Lock, ArrowUpCircle } from 'lucide-vue-next'
+  import { FlaskConical, Plus, Check, ChevronDown, X, Dna, Trash2, Sprout, PackageOpen, Star, Lock, ArrowUpCircle } from 'lucide-vue-next'
   import Button from '@/components/game/Button.vue'
   import { useBreedingStore } from '@/stores/useBreedingStore'
   import { useGameStore } from '@/stores/useGameStore'
@@ -531,6 +560,9 @@
 
   type Tab = 'breeding' | 'compendium'
   const tab = ref<Tab>('breeding')
+
+  // === 育种规则展示 ===
+  const showRules = ref(false)
 
   // === 图鉴阶层筛选 ===
 

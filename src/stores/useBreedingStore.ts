@@ -363,7 +363,7 @@ export const useBreedingStore = defineStore('breeding', () => {
 
       return result
     } else {
-      // 匹配失败，返回随机父本种子的副本并微降属性
+      // 匹配失败，返回随机亲本种子的副本并微降属性
       const source = Math.random() < 0.5 ? a : b
       const statToReduce: ('sweetness' | 'yield' | 'resistance')[] = ['sweetness', 'yield', 'resistance']
       const randomStat = statToReduce[Math.floor(Math.random() * 3)]!
@@ -376,7 +376,7 @@ export const useBreedingStore = defineStore('breeding', () => {
 
       if (hybrid) {
         addLog(
-          `杂交失败：父本平均甜度${Math.round(avgSweetness)}（需≥${hybrid.minSweetness}），平均产量${Math.round(avgYield)}（需≥${hybrid.minYield}）。请先通过同种培育提升属性。`
+          `杂交失败：亲本平均甜度${Math.round(avgSweetness)}（需≥${hybrid.minSweetness}），平均产量${Math.round(avgYield)}（需≥${hybrid.minYield}）。请先通过同种培育提升属性。`
         )
       } else {
         addLog('这两个品种无法杂交，返回了一颗种子。')

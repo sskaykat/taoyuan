@@ -112,6 +112,6 @@ export const MORNING_TIPS: MorningTipDef[] = [
     id: 'tip_try_animal',
     priority: 18,
     conditionKey: 'neverHadAnimal',
-    message: '柳村长说：「养些鸡鸭牛羊也不错，先去商铺建个鸡舍或畜棚吧。」'
+    message: '柳村长说：「养些鸡鸭牛羊也不错，先去商铺建个鸡舍或牧场吧。」'
   }
 ]
